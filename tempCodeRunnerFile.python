@@ -1,0 +1,50 @@
+import concurrent.futures
+import time
+import random
+
+FILE_NAME = "shared_code.py"
+
+# 1. Reset the target file to a clean state
+with open(FILE_NAME, "w") as f:
+    f.write("def main():\n    pass\n")
+
+def ai_agent(agent_name, code_to_add):
+    print(f"[{agent_name}] Started. Reading file...")
+    
+    # STEP A: Read the current state of the file
+    with open(FILE_NAME, "r") as f:
+        current_code = f.read()
+    
+    # STEP B: Simulate "Reasoning" (LLM generation latency)
+    # Both agents will likely read the file while the other is stuck in this phase.
+    think_time = random.uniform(2, 4)
+    print(f"[{agent_name}] Generating code for {think_time:.1f} seconds...")
+    time.sleep(think_time)
+    
+    # STEP C: Generate new code (appending their specific line)
+    new_code = current_code + f"    {code_to_add}\n"
+    
+    # STEP D: Write changes back to the file
+    print(f"[{agent_name}] Writing changes to file...")
+    with open(FILE_NAME, "w") as f:
+        f.write(new_code)
+    print(f"[{agent_name}] Done!")
+
+def run_simulation():
+    print("--- Starting Agent Collision Simulation ---\n")
+    
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+        # Launch both agents at the exact same time
+        future1 = executor.submit(ai_agent, "Agent 1 (Feature)", "print('Feature added by Agent 1')")
+        future2 = executor.submit(ai_agent, "Agent 2 (Security)", "print('Security patch by Agent 2')")
+        
+        # Wait for both to finish
+        concurrent.futures.wait([future1, future2])
+
+    print("\n--- Simulation Complete ---")
+    print("Final contents of shared_code.py:")
+    with open(FILE_NAME, "r") as f:
+        print(f.read())
+
+if __name__ == "__main__":
+    run_simulation()
